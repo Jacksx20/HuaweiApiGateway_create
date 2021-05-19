@@ -1,0 +1,308 @@
+自我修改：基于ECS或者本地Linux环境构建自定义镜像创建训练任务整体流程
+
+
+
+安装所需运行环境：
+
+首先：下载OBS桶 网址： https://support.huaweicloud.com/browsertg-obs/obs_03_1000.html
+
+其次：华为云登录奥拓账号 网址：https://console.huaweicloud.com/modelarts
+
+最后：安装docker
+
+
+
+按以下步骤执行流程，遇到问题可以参考视频Video_2020-04-22_120923.wmv，Video_2020-04-22_125548.wmv
+
+
+
+1.安装docker并启动：
+
+可使用该命令：systemctl enable docker
+
+
+
+2.拉取华为云基础镜像：
+
+docker pull 华为云基础镜像地址
+
+可使用该命令：docker pull swr.cn-north-4.myhuaweicloud.com/modelarts-job-dev-image/custom-gpu-cuda92-base:1.3
+
+参考链接：https://support.huaweicloud.com/engineers-modelarts/modelarts_23_0217.html
+
+
+
+3.查看镜像：
+
+docker images
+
+
+
+4.创建容器并进入容器（自定义容器名称，这里假设为AAA）：
+
+docker run -it --name 容器名称 镜像名称:版本名称 /bin/bash
+
+可使用该命令：docker run -it --name AAA   swr.cn-north-4.myhuaweicloud.com/modelarts-job-dev-image/custom-gpu-cuda92-base:1.3 /bin/bash
+
+docker run -it --name correct   test:1.0 /bin/bash
+
+
+
+注意：容器名称 AAA 会生成对应的容器ID fbb9f3b00069
+
+容器名称 test 会生成对应的容器ID 0fc162ee8bbd
+
+
+
+5.查看容器：
+
+docker ps
+
+
+
+6.在基础镜像中配置自己想要的环境例如安装TF、pytorch等
+
+
+
+6.1 安装和激活conda:
+
+wget https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh
+
+sh Miniconda3-4.5.11-Linux-x86_64.sh
+
+询问是否将conda加入环境变量的时候选择no，然后人工添加环境变量
+
+
+
+6.2 修改环境变量：
+
+vim ~/.bashrc
+
+
+
+6.3 添加环境变量至bashrc目录最下面：
+
+export PATH=/home/miniconda3/bin:$PATH
+
+
+
+6.4 激活环境：
+
+source ~/.bashrc
+
+参考链接：https://www.jianshu.com/p/edaa744ea47d
+
+
+
+6.5 将已有Python环境打包成requirements.txt
+
+参考链接：https://blog.csdn.net/chekongfu/article/details/83187591?depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromBaidu-4&utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromBaidu-4
+
+
+
+6.6 先把环境文件（requirements.txt）上传到Linux服务器上：
+
+通过wincp：从笔记本电脑上传到服务器上
+
+
+
+6.7 将requirements.txt文件复制到指定容器中
+
+docker cp 本地文件路径的文件夹或者本地路径下的文件 容器ID:容器路径
+
+参考命令：docker cp ~/requirements2.txt AAA:/home
+
+docker cp ~/req.txt 0fc162ee8bbd:/home
+
+docker cp ~/req.txt 73f2702901a4:/home
+
+6.8 将.py文件安装到镜像容器中
+
+6.9 安装pip软件包
+
+
+
+7.将容器打包成新的镜像（镜像名称，版本可以自定义）：
+
+docker commit [容器ID] [镜像名称:版本]
+
+举例：docker commit AAA yes:1.0
+
+docker commit 73f2702901a4 correct:10.2
+
+
+
+8.查看镜像目录：
+
+docker images
+
+
+
+9.客户端上传镜像到swr：
+
+帮助文档：https://support.huaweicloud.com/usermanual-swr/swr_01_0011.html
+
+注：可以跳过帮助文档，直接看步骤
+
+
+
+9.1 获取modelarts访问权限
+
+9.1.1 登录容器镜像服务：
+
+https://console.huaweicloud.com/swr/?region=cn-north-4#/app/warehouse/list
+
+
+
+9.1.2 点击我的镜像，选择客户端上传：
+
+
+
+9.1.3 找到这句话：Step 2. 获取登录Docker访问权限，并复制到节点上执行，然后点击 生成临时docker login指令 
+
+例如：docker login -u cn-north-4@FYVXSN2LS0MNJ64RC3Z0 -p 04b9acf2525cd9f3691a59a95453fbb2c6ef22671f4ffbbc17b44ba65de4aae4 swr.cn-north-4.myhuaweicloud.com
+
+
+
+9.1.4 建立Modelarts与本地的链接：
+
+将生成的指令复制到 本地上
+
+
+
+9.2 上传镜像命令：
+
+9.2.1 重新给 本地镜像名称 命名为 modelarts的 镜像名称
+
+sudo docker tag [{镜像名称}:{版本名称}] swr.cn-north-4.myhuaweicloud.com/{组织名称}/{镜像名称}:{版本名称}
+
+实例：
+
+sudo docker tag yes:1.0 swr.cn-north-4.myhuaweicloud.com/aoto/yes:1.0
+
+sudo docker tag correct:1.1 swr.cn-north-4.myhuaweicloud.com/aoto/correct:1.1
+
+sudo docker tag correct:10.2 swr.cn-north-4.myhuaweicloud.com/aoto/correct:10.2
+
+
+
+9.2.2 上传镜像至modelarts
+
+sudo docker push swr.cn-north-4.myhuaweicloud.com/{组织名称}/{镜像名称}:{版本名称}
+
+实例：
+
+sudo docker push swr.cn-north-4.myhuaweicloud.com/aoto/yes:1.0
+
+sudo docker push swr.cn-north-4.myhuaweicloud.com/aoto/correct:1.1
+
+sudo docker push swr.cn-north-4.myhuaweicloud.com/aoto/correct:10.2
+
+
+
+10. 进入modelarts使用自定义镜像创建训练任务
+
+帮助文档：参考链接：https://support.huaweicloud.com/engineers-modelarts/modelarts_23_0087.html
+
+注：可以跳过帮助文档，直接看步骤
+
+
+
+10.1 进入modelarts
+
+https://console.huaweicloud.com/modelarts
+
+
+
+10.2  依次点击训练管理，训练作业，创建，在算法来源点击自定义，上传自定义模型
+
+参考镜像地址：镜像上传到 SWR 后生成的地址。步骤：1.进入https://console.huaweicloud.com/swr/?region=cn-north-4#/app/warehouse/warehouseMangeDetail/jfh_17715254894/aoto/kk1?type=ownImage；2.选择下载指令并点击复制
+
+参考代码目录：用户存放训练代码的 OBS 路径（找到镜像中的代码）
+
+参考运行命令：bash /home/work/run_train.sh [python/bash/..] {file_location} {file_parameter}
+
+实例：bash /home/work/run_train.sh /home/miniconda3/bin/python3 /home/work/user-job-dir/kashgari_code/train.py 2&>1
+
+bash /home/work/run_train.sh /home/miniconda3/bin/python3 /home/work/user-job-dir/correct/correct_code/train_test.py 2&>1
+
+bash /home/work/run_train.sh python3 /home/work/user-job-dir/correct/correct_code/train_test.py 2&>1
+
+bash /home/work/run_train.sh /home/miniconda3/bin/python3 /home/work/user-job-dir/pycorrector/seq2seq_attention/train_test.py 2&>1
+
+
+
+10.3 数据存储位置：用户存放数据的 OBS 路径（可以随便填一个，如果数据在镜像里）
+
+
+
+10.4 训练输出位置 ：用户存放模型的 OBS 路径（可以随意填一个，如果数据在镜像里），因为在train.py文件中已经设置了OBS路径
+
+
+
+10.5 使用S3协议保存模型从本地到OBS桶里：（方便拿取模型）
+
+参考代码：
+
+import boto3
+
+s3 = boto3.client('s3',aws_access_key_id=aws_key,aws_secret_access_key=aws_secret_key,endpoint_url='https://obs.cn-north-4.myhuaweicloud.com')
+
+s3.upload_file(本地文件名，桶名称，文件夹名/文件名)
+
+
+
+实例：
+
+import boto3
+
+s3 = boto3.client('s3',aws_access_key_id='自己填写',aws_secret_access_key='自己填写',endpoint_url='https://obs.cn-north-4.myhuaweicloud.com')
+
+s3.upload_file('/home/work/user-job-dir/kashgari_code/model/model_weights.h5','kg-model-aoto','model-data/model/model_weights.h5')
+
+
+
+注意：.py脚本代码可以参考train.py文件
+
+
+
+10.6 选择专属资源池，提交就行
+
+
+
+
+
+可能会用到的命令：
+
+1.进入和运行容器命令：
+
+docker start 容器ID
+
+docker attach 容器ID
+
+举例：docker start 0fc162ee8bbd 进入容器
+
+docker attach 0fc162ee8bbd 运行容器
+
+
+
+2.退出容器:
+
+exit
+
+
+
+3.删除指定镜像：
+
+docker rmi 镜像名称:tag
+
+举例：docker rmi test:1.0
+
+
+
+4.删除容器：
+
+docker rm 容器ID
+
+举例：docker rm 0fc162ee8bbd
+

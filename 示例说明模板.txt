@@ -1,0 +1,115 @@
+# 示例名称
+
+## 场景介绍
+_描述本示例是解决了什么场景下的什么问题_
+
+
+## 前提条件
+_描述示例的运行需要的条件和环境_
+
+
+## 示例代码
+_展示示例主要功能的代码片段_
+
+
+## 运行示例
+_描述将代码示例运行起来所相关的命令和步骤_
+
+
+## 运行结果
+_描述示例最终运行起来的结果是什么样的_
+
+
+-----------------------样例----------------------------------------
+
+
+# AI自动识别人脸特征-JAVA
+
+## 场景介绍
+
+人脸识别以开放API（Application Programming Interface，应用程序编程接口）的方式提供给用户，用户通过实时访问和调用API获取人脸处理结果，帮助用户自动进行人脸的识检测等，打造智能化业务系统，提升业务效率。
+
+## 前提条件
+ - 申请服务：用户在FRS管理控制台页面“服务管理”栏选择人脸检测服务申请开通。具体操作请参见<a href="https://support.huaweicloud.com/api-face/face_02_0006.html"> 申请服务章 </a>节
+   
+ - 配置环境：获取SDK和样例工程，导入到开发Java环境中。
+ 
+      1、获取API相关文档，人脸识别服务的API请见《<a href="https://support.huaweicloud.com/api-face/face_02_0052.html"> 人脸识别API参考 </a>》。
+      
+      2、获取人脸识别服务的Endpoint，请参见<a href="https://developer.huaweicloud.com/endpoint?FRS"> 地区和终端节点 </a>。
+      
+      3、开通人脸识别服务：登录<a href="https://console.huaweicloud.com/frs/?locale=zh-cn&region=cn-north-4#/frs/home"> 人脸识别管理控制台 </a>，选择对应的子服务，单击右侧的“开通服务”。服务开通一次即可，后续使用时无需再开通。
+      
+      4、获取华为云账号的AK/SK。如果之前没有生成过AK/SK，可登录“<a href="https://console.huaweicloud.com/iam/?region=cn-north-4&locale=zh-cn#/myCredential"> 我的凭证 </a>“界面，选择“管理访问密钥 > 新增访问密钥”来获取。
+      
+      5、已经安装好JDK，Java SDK适用于JDK1.8+。
+
+## 示例代码
+使用如下代码同步查询特定 Region 下的人脸识别服务（FRS），调用前请根据实际情况替换如下变量 {your ak string}、{your sk string}、{your region string}、{your endpoint string} 、{your projectId string} 以及 {your file path string}
+
+public class Application {
+    private static final Logger logger = LoggerFactory.getLogger(Application.class);
+
+    public static void main(String[] args) {
+        String ak = "{your ak string}";
+        String sk = "{your sk string}";
+        String endpoint = "{your endpoint string}";
+        String projectId = "{your projectId string}";
+        String region = "{your region string}";
+
+        AuthInfo authInfo = new AuthInfo(endpoint, region, ak, sk);
+        FrsClient frsClient = new FrsClient(authInfo, projectId);
+
+        frsClient.getCompareService();
+        frsClient.getDetectService();
+        frsClient.getFaceService();
+        frsClient.getFaceSetService();
+        frsClient.getLiveDetectService();
+        frsClient.getSearchService();
+
+        String filePath = "{your file path string}";
+        String param = "0,1,2,3,4,5";
+
+        try {
+            DetectFaceResult detectFaceResult = frsClient.getDetectService().detectFaceByFile(filePath, param);
+
+            logger.info("年龄: " + detectFaceResult.getFaces().get(0).getAttributes().getAge());
+            logger.info("性别: " + detectFaceResult.getFaces().get(0).getAttributes().getGender());
+            logger.info(
+                    "穿戴: 是否戴帽子 "
+                            + detectFaceResult.getFaces().get(0).getAttributes().getDress().getHat()
+                            + ", 是否戴眼镜 "
+                            + detectFaceResult.getFaces().get(0).getAttributes().getDress().getGlass());
+            logger.info("是否笑: " + detectFaceResult.getFaces().get(0).getAttributes().getSmile());
+            logger.info(
+                    "姿势: 俯仰角"
+                            + detectFaceResult.getFaces().get(0).getAttributes().getHeadPose().getPitchAngle()
+                            + ", 航向角 "
+                            + detectFaceResult.getFaces().get(0).getAttributes().getHeadPose().getYawAngle()
+                            + ", 横滚角 "
+                            + detectFaceResult.getFaces().get(0).getAttributes().getHeadPose().getRollAngle());
+            
+        } catch (FrsException e) {
+            logger.error(System.currentTimeMillis() + "--> frsClient exception{}.", e.getMessage());
+        } catch (IOException e) {
+            logger.error(System.currentTimeMillis() + "--> file error{}.", e.getMessage());
+        } finally {
+            try {
+                frsClient.close();
+            } catch (Exception e) {
+                logger.error(System.currentTimeMillis() + "--> frsClient close exception{}.", e.getMessage());
+            }
+        }
+    }
+}
+
+## 运行示例
+
+ - 根据实际情况替换如下变量 {your ak string}、{your sk string}、{your region string}、{your endpoint string} 、{your projectId string} 以及 {your file path string}
+ - 执行 Application 类的 main 方法，Run 或者 Debug
+
+## 运行结果
+
+ - 执行完 main 方法后，再 console 查看日志打印了图片人物信息，包括年龄、性别、坐姿、穿戴、是否微笑。
+
+
